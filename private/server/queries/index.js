@@ -1,5 +1,7 @@
 const eventById = require('./event')
+const listEvents = require('./listEvents')
 
 module.exports = {
-  eventById
+  eventById,
+  listEvents
 }
