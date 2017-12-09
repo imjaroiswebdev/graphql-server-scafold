@@ -1,16 +1,11 @@
 const { createServer } = require('http')
 const express = require('express')
-const {
-  graphqlExpress,
-  graphiqlExpress
-} = require('graphql-server-express')
+const { graphqlExpress, graphiqlExpress } = require('graphql-server-express')
 const { SubscriptionServer } = require('subscriptions-transport-ws')
-const {
-  subscribe,
-  execute
-} = require('graphql')
+const { subscribe, execute } = require('graphql')
 const bodyParser = require('body-parser')
 const schema = require('./schema')
+const DB = require('./DB')
 
 const app = express()
 
@@ -19,18 +14,27 @@ const PORT = process.env.PORT || 8888
 const HOST = process.env.HOST || 'localhost'
 
 app.use(bodyParser.json())
-app.use('/api', graphqlExpress({ schema }))
+app.use(
+  '/api',
+  graphqlExpress({
+    schema,
+    context: { DB }
+  })
+)
 
 if (__DEV__) {
-  app.get('/graphiql', graphiqlExpress({
-    endpointURL: '/api',
-    subscriptionsEndpoint: `ws://${HOST}:${PORT}/subscriptions`
-  }))
+  app.get(
+    '/graphiql',
+    graphiqlExpress({
+      endpointURL: '/api',
+      subscriptionsEndpoint: `ws://${HOST}:${PORT}/subscriptions`
+    })
+  )
 }
 
 const server = createServer(app)
 
-server.listen(PORT, async (err) => {
+server.listen(PORT, async err => {
   if (err) {
     throw err
   }
@@ -40,7 +44,8 @@ server.listen(PORT, async (err) => {
       schema,
       execute,
       subscribe,
-      onConnect: () => console.log('Client connected for listening subscriptions')
+      onConnect: () =>
+        console.log('Client connected for listening subscriptions')
     },
     {
       server,

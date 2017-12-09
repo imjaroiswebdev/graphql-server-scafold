@@ -1,12 +1,14 @@
-const { GraphQLNonNull } = require('graphql')
+const { GraphQLNonNull, GraphQLString } = require('graphql')
 const EventType = require('../types/event')
 const EventInputType = require('../types/input/event')
-const socket = require('../socket')
-const { EVENT_CREATED } = require('../../shared/types-constants')
 
 module.exports = {
   type: EventType,
   args: {
+    id: {
+      name: 'id',
+      type: new GraphQLNonNull(GraphQLString)
+    },
     data: {
       name: 'data',
       type: new GraphQLNonNull(EventInputType)
@@ -14,16 +16,11 @@ module.exports = {
   },
   resolve: (root, args, context) =>
     new Promise((resolve, reject) => {
-      const { data } = args
+      const { id, data } = args
       const { DB: { Event } } = context
 
-      const newEvent = new Event(data)
-      newEvent
-        .save()
-        .then(eventCreated => {
-          socket.publish(EVENT_CREATED, { eventCreated })
-          resolve(eventCreated)
-        })
+      Event.findOneAndUpdate({ _id: id }, data, { new: true })
+        .then(eventUpdated => resolve(eventUpdated))
         .catch(err => reject(err))
     })
 }
